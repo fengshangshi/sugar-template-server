@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+var fs = require('fs');
+var path = require('path');
+var cp = require('child_process');
+var program = require('commander');
+
+var pidFile = path.join(__dirname, '../logs/pid');
+var bootFile = path.join(__dirname, '../index.js');
+
+// setting version
+program.version(require('../package').version);
+
+// setting server start
+program
+		.command('start')
+		.description('start server')
+		.action(startServer);
+
+// setting server restart
+program
+		.command('restart')
+		.description('restart server')
+		.action(restartServer);
+
+// setting server stop
+program
+		.command('stop')
+		.description('stop server')
+		.action(stopServer);
+
+program.parse(process.argv);
+
+// start server command
+function startServer() {
+		if (fs.existsSync(pidFile)) {
+				console.log('检测到服务器已在运行, 请勿重复启动');
+				return;
+		}
+
+		console.log('开始启动服务器...');
+		var pid = cp.spawn('node', [bootFile]).pid;
+		fs.writeFileSync(pidFile, pid);
+		console.log('启动服务器成功');
+}
+
+// stop server command
+function stopServer() {
+		if (!fs.existsSync(pidFile)) return;
+
+		console.log('开始停止服务器...');
+		var pid = fs.readFileSync(pidFile, 'utf-8');
+		cp.spawn('kill', ['-s', '2', pid]);
+		fs.unlinkSync(pidFile);
+		console.log('停止服务器成功');
+}
+
+// restart server command
+function restartServer() {
+		if (!fs.existsSync(pidFile)) {
+				console.log('服务器还未启动，请使用start命令启动服务器');
+				return;
+		}
+
+		stopServer();
+		setTimeout(function() {
+				startServer();
+		}, 10);
+}
+
+// kill -s 9
+process.on('SIGINT', function() {
+		stopServer();
+		process.exit(0);
+});

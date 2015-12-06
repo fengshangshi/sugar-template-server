@@ -1,0 +1,30 @@
+{
+  "name": "sugar-server",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "fengshangshi",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.14.1",
+    "commander": "^2.9.0",
+    "connect-header": "0.0.5",
+    "connect-timeout": "^1.7.0",
+    "ejs": "^2.3.4",
+    "express": "^4.13.3",
+    "file-stream-rotator": "0.0.6",
+    "hbs": "^4.0.0",
+    "jade": "^1.11.0",
+    "lodash": "^3.10.1",
+    "method-override": "^2.3.5",
+    "moment": "^2.10.6",
+    "morgan": "^1.6.1",
+    "serve-favicon": "^2.3.0",
+    "static-favicon": "^1.0.2",
+    "superagent": "^1.4.0",
+    "winston": "^2.1.1"
+  }
+}

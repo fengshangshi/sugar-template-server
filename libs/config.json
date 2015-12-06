@@ -1,0 +1,30 @@
+{
+		"routeUseModule": false,
+
+		"autoTemplateRoute": true,
+
+		"timeout": 10,
+
+		"console": false,
+
+		"viewEngine": "hbs",
+
+		"server": {
+				"port": 8080,
+				"name": "SWS",
+				"support": "SUGAR"
+		},
+
+		"preMiddleware": [
+				"access",
+				"settimeout",
+				"checktimeout",
+				"static",
+				"view",
+				"header",
+				"urlparser",
+				"bodyparser",
+				"methodoverride",
+				"favicon"
+		]
+}
