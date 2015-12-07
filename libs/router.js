@@ -92,6 +92,7 @@ function router(cb) {
 										routers[fn_index].apply(Object.freeze(new Sugar(req)), paths);
 										break;
 								
+								case 2:
 								case 3:
 										routers[fn_path].params && mergeReqParams(req, routers[fn_path].params, paths);
 										paths.unshift(req, res, next);
