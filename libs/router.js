@@ -3,6 +3,7 @@ var path = require('path');
 var Sugar = require('ssugar');
 
 var controller = {};
+var middleware = {};
 
 function mergeReqParams(req, keys, values) {
 		keys = typeof keys === 'string' ? [keys] : keys;
@@ -26,15 +27,24 @@ function scanController(controller, dir, root) {
 						scanController(controller[i], filePath);
 				} else if (/\.js$/.test(i)) {
 						controller[i.slice(0, -3)] = require(filePath);
-						logger.info('loading ' + filePath + ' success');
+						logger.info('loading controller ' + filePath + ' success');
 				}
 		});
 };
 
-function initController(ctrl, dir) {
+function scanMiddleware(middleware, dir) {
+		fs.readdirSync(dir).forEach(function(i) {
+				var filePath = path.join(dir, i);
+				if (/\.js$/.test(i)) {
+						middleware[i.slice(0, -3)] = require(filePath);
+						logger.info('loading middleware ' + filePath + ' success');
+				}
+		});
+};
+
+function initController(controller, dir) {
 		var dirs = fs.readdirSync(dir);
 		dirs.forEach(function(i) {
-				// ignore common
 				if (i === 'common') return false;
 
 				var filePath = path.join(dir, i, '/controller');
@@ -51,9 +61,34 @@ function initController(ctrl, dir) {
 		});
 }
 
+function initMiddleware(middleware, dir) {
+		var dirs = fs.readdirSync(dir);
+		dirs.forEach(function(i) {
+				if (i === 'common') return false;
+				var filePath = path.join(dir, i, 'middleware');
+				if (!fs.existsSync(filePath)) {
+						logger.warn(i + '中不存在middleware目录');
+						return false;
+				}
+
+				scanMiddleware(middleware, filePath);
+		});
+}
+
+function runMiddleware(middlewares, req, res, paths) {
+		var isResEnd = 0;
+		_.forEach(middlewares, function(i) {
+				var fn = middleware[i];
+				fn && fn().call(null, req, res, paths) && isResEnd++;
+		});
+		return isResEnd;
+}
+
 function router(cb) {
 		initController(controller, APPROOT);
+		initMiddleware(middleware, APPROOT);
 		Object.freeze(controller);
+		Object.freeze(middleware);
 
 		return function(req, res, next) {
 				var paths = req.path.substring(1).split('/');
@@ -73,7 +108,6 @@ function router(cb) {
 								routers = routers['index'];
 						}
 
-
 						var fn_index = method + '_' + 'index';
 						var fn_path = method + '_' + path;
 
@@ -87,16 +121,22 @@ function router(cb) {
 
 								case 1:
 										path && paths.unshift(path);
-										routers[fn_index].params && mergeReqParams(req, routers[fn_index].params, paths);
+										var params = routers[fn_index].params;
+										params && mergeReqParams(req, params, paths);
 										paths.unshift(req, res, next);
-										routers[fn_index].apply(Object.freeze(new Sugar(req)), paths);
+										var filters = routers[fn_index].filters;
+										var isResEnd = filters && runMiddleware(filters, req, res, paths);
+										!isResEnd && routers[fn_index].apply(Object.freeze(new Sugar(req)), paths);
 										break;
 								
 								case 2:
 								case 3:
-										routers[fn_path].params && mergeReqParams(req, routers[fn_path].params, paths);
+										var params = routers[fn_path].params;
+										params && mergeReqParams(req, params, paths);
 										paths.unshift(req, res, next);
-										routers[fn_path].apply(Object.freeze(new Sugar(req)), paths);
+										var filters = routers[fn_path].filters;
+										var isResEnd = filters && runMiddleware(filters, req, res, paths);
+										!isResEnd && routers[fn_path].apply(Object.freeze(new Sugar(req)), paths);
 										break;
 						}
 
